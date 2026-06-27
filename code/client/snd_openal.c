@@ -44,6 +44,7 @@ cvar_t *s_alDevice;
 cvar_t *s_alInputDevice;
 cvar_t *s_alAvailableDevices;
 cvar_t *s_alAvailableInputDevices;
+cvar_t *s_alHRTF;
 
 static qboolean enumeration_ext = qfalse;
 static qboolean enumeration_all_ext = qfalse;
@@ -2531,6 +2532,7 @@ qboolean S_AL_Init( soundInterface_t *si )
 
 	s_alInputDevice = Cvar_Get( "s_alInputDevice", "", CVAR_ARCHIVE | CVAR_LATCH );
 	s_alDevice = Cvar_Get("s_alDevice", "", CVAR_ARCHIVE | CVAR_LATCH);
+	s_alHRTF = Cvar_Get("s_alHRTF", "2", CVAR_ARCHIVE | CVAR_LATCH);
 
 	// Load QAL
 	if( !QAL_Init( s_alDriver->string ) )
@@ -2621,7 +2623,28 @@ qboolean S_AL_Init( soundInterface_t *si )
 	}
 
 	// Create OpenAL context
-	alContext = qalcCreateContext( alDevice, NULL );
+	{
+		ALCint attribs[16];
+		int attr_idx = 0;
+
+#ifndef ALC_HRTF_SOFT
+#define ALC_HRTF_SOFT                            0x1992
+#define ALC_HRTF_DISABLED_SOFT                   0x0000
+#define ALC_HRTF_ENABLED_SOFT                    0x0001
+#endif
+
+		// 0 = Force Off, 1 = Force On, 2 = Auto
+		if ( s_alHRTF->integer == 0 ) {
+			attribs[attr_idx++] = ALC_HRTF_SOFT;
+			attribs[attr_idx++] = ALC_HRTF_DISABLED_SOFT;
+		} else if ( s_alHRTF->integer == 1 ) {
+			attribs[attr_idx++] = ALC_HRTF_SOFT;
+			attribs[attr_idx++] = ALC_HRTF_ENABLED_SOFT;
+		}
+		attribs[attr_idx++] = 0;
+
+		alContext = qalcCreateContext( alDevice, attribs );
+	}
 	if( !alContext )
 	{
 		QAL_Shutdown( );

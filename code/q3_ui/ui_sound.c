@@ -47,6 +47,7 @@ SOUND OPTIONS MENU
 #define ID_QUALITY			16
 #define ID_SOUNDSYSTEM		17
 #define ID_VOIP				18
+#define ID_HRTF				21
 #define ID_BACK				19
 #define ID_APPLY			20
 
@@ -84,6 +85,7 @@ typedef struct {
 	menulist_s  		soundSystem;
 	menulist_s			quality;
 	menulist_s			voip;
+	menulist_s			hrtf;
 //	menuradiobutton_s	a3d;
 
 	menubitmap_s		back;
@@ -94,6 +96,7 @@ typedef struct {
 	int					soundSystem_original;
 	int					quality_original;
 	int					voip_original;
+	int					hrtf_original;
 } soundOptionsInfo_t;
 
 static soundOptionsInfo_t	soundOptionsInfo;
@@ -152,9 +155,13 @@ static void UI_SoundOptionsMenu_Event( void* ptr, int event ) {
 		trap_Cvar_SetValue( "cl_voip", soundOptionsInfo.voip.curvalue );
 		soundOptionsInfo.voip_original = soundOptionsInfo.voip.curvalue;
 
+		trap_Cvar_SetValue( "s_alHRTF", soundOptionsInfo.hrtf.curvalue );
+		soundOptionsInfo.hrtf_original = soundOptionsInfo.hrtf.curvalue;
+
 		// Check if something changed that requires the sound system to be restarted.
 		if (soundOptionsInfo.quality_original != soundOptionsInfo.quality.curvalue
-			|| soundOptionsInfo.soundSystem_original != soundOptionsInfo.soundSystem.curvalue)
+			|| soundOptionsInfo.soundSystem_original != soundOptionsInfo.soundSystem.curvalue
+			|| soundOptionsInfo.hrtf_original != soundOptionsInfo.hrtf.curvalue)
 		{
 			int speed;
 
@@ -226,6 +233,10 @@ static void SoundOptions_UpdateMenuItems( void )
 	{
 		soundOptionsInfo.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
 	}
+	if ( soundOptionsInfo.hrtf_original != soundOptionsInfo.hrtf.curvalue )
+	{
+		soundOptionsInfo.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
+	}
 }
 
 /*
@@ -249,6 +260,10 @@ UI_SoundOptionsMenu_Init
 static void UI_SoundOptionsMenu_Init( void ) {
 	int				y;
 	int				speed;
+
+	static const char *hrtf_items[] = {
+		"Force Off", "Force On", "Auto", NULL
+	};
 
 	memset( &soundOptionsInfo, 0, sizeof(soundOptionsInfo) );
 
@@ -373,6 +388,16 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.voip.generic.y				= y;
 	soundOptionsInfo.voip.itemnames				= enabled_names;
 
+	y += BIGCHAR_HEIGHT+2;
+	soundOptionsInfo.hrtf.generic.type			= MTYPE_SPINCONTROL;
+	soundOptionsInfo.hrtf.generic.name			= "3D Audio (HRTF):";
+	soundOptionsInfo.hrtf.generic.flags			= QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	soundOptionsInfo.hrtf.generic.callback		= UI_SoundOptionsMenu_Event;
+	soundOptionsInfo.hrtf.generic.id			= ID_HRTF;
+	soundOptionsInfo.hrtf.generic.x				= 400;
+	soundOptionsInfo.hrtf.generic.y				= y;
+	soundOptionsInfo.hrtf.itemnames				= hrtf_items;
+
 /*
 	y += BIGCHAR_HEIGHT+2;
 	soundOptionsInfo.a3d.generic.type			= MTYPE_RADIOBUTTON;
@@ -417,6 +442,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.soundSystem );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.quality );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.voip );
+	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.hrtf );
 //	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.a3d );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.back );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.apply );
@@ -444,6 +470,11 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.quality.curvalue = soundOptionsInfo.quality_original;
 
 	soundOptionsInfo.voip.curvalue = soundOptionsInfo.voip_original = trap_Cvar_VariableValue( "cl_voip" ) != 0;
+
+	soundOptionsInfo.hrtf.curvalue = soundOptionsInfo.hrtf_original = trap_Cvar_VariableValue( "s_alHRTF" );
+	if ( soundOptionsInfo.hrtf.curvalue < 0 || soundOptionsInfo.hrtf.curvalue > 2 ) {
+		soundOptionsInfo.hrtf.curvalue = 2; // Default to Auto
+	}
 //	soundOptionsInfo.a3d.curvalue = (int)trap_Cvar_VariableValue( "s_usingA3D" );
 }
 
