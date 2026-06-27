@@ -277,6 +277,8 @@ typedef struct {
 	menulist_s  	multisample;
 	menulist_s  	anisotropy;
 	menulist_s  	vsync;
+	menulist_s  	shadows;
+	menulist_s  	dynamiclight;
 	menutext_s		driverinfo;
 
 	menubitmap_s	apply;
@@ -299,6 +301,8 @@ typedef struct
 	int multisample;
 	int anisotropy;
 	int vsync;
+	int shadows;
+	int dynamiclight;
 } InitialVideoOptions_s;
 
 static InitialVideoOptions_s	s_ivo;
@@ -307,22 +311,22 @@ static graphicsoptions_t		s_graphicsoptions;
 static InitialVideoOptions_s s_ivo_templates[] =
 {
 	{
-		6, qtrue, 3, 0, 2, 2, 2, 1, 0, qtrue, 1, 3, 4, 1
+		6, qtrue, 3, 0, 2, 2, 2, 1, 0, qtrue, 1, 3, 4, 1, 3, 2
 	},
 	{
-		4, qtrue, 2, 0, 2, 2, 1, 1, 0, qtrue, 1, 2, 3, 1
+		4, qtrue, 2, 0, 2, 2, 1, 1, 0, qtrue, 1, 2, 3, 1, 2, 1
 	},
 	{
-		3, qtrue, 2, 0, 0, 0, 1, 0, 0, qtrue, 0, 0, 0, 0
+		3, qtrue, 2, 0, 0, 0, 1, 0, 0, qtrue, 0, 0, 0, 0, 1, 1
 	},
 	{
-		2, qtrue, 1, 0, 1, 0, 0, 0, 0, qtrue, 0, 0, 0, 0
+		2, qtrue, 1, 0, 1, 0, 0, 0, 0, qtrue, 0, 0, 0, 0, 1, 0
 	},
 	{
-		2, qtrue, 1, 1, 1, 0, 0, 0, 0, qtrue, 0, 0, 0, 0
+		2, qtrue, 1, 1, 1, 0, 0, 0, 0, qtrue, 0, 0, 0, 0, 0, 0
 	},
 	{
-		3, qtrue, 1, 0, 0, 0, 1, 0, 0, qtrue, 0, 0, 0, 0
+		3, qtrue, 1, 0, 0, 0, 1, 0, 0, qtrue, 0, 0, 0, 0, 1, 1
 	}
 };
 
@@ -497,6 +501,8 @@ static void GraphicsOptions_GetInitialVideo( void )
 	s_ivo.multisample = s_graphicsoptions.multisample.curvalue;
 	s_ivo.anisotropy  = s_graphicsoptions.anisotropy.curvalue;
 	s_ivo.vsync       = s_graphicsoptions.vsync.curvalue;
+	s_ivo.shadows     = s_graphicsoptions.shadows.curvalue;
+	s_ivo.dynamiclight = s_graphicsoptions.dynamiclight.curvalue;
 }
 
 /*
@@ -600,6 +606,10 @@ static void GraphicsOptions_CheckConfig( void )
 			continue;
 		if ( s_ivo_templates[i].vsync != s_graphicsoptions.vsync.curvalue )
 			continue;
+		if ( s_ivo_templates[i].shadows != s_graphicsoptions.shadows.curvalue )
+			continue;
+		if ( s_ivo_templates[i].dynamiclight != s_graphicsoptions.dynamiclight.curvalue )
+			continue;
 //		if ( s_ivo_templates[i].texturebits != s_graphicsoptions.texturebits.curvalue )
 //			continue;
 		s_graphicsoptions.list.curvalue = i;
@@ -701,6 +711,14 @@ static void GraphicsOptions_UpdateMenuItems( void )
 		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
 	}
 	if ( s_ivo.vsync != s_graphicsoptions.vsync.curvalue )
+	{
+		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
+	}
+	if ( s_ivo.shadows != s_graphicsoptions.shadows.curvalue )
+	{
+		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
+	}
+	if ( s_ivo.dynamiclight != s_graphicsoptions.dynamiclight.curvalue )
 	{
 		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
 	}
@@ -841,6 +859,12 @@ static void GraphicsOptions_ApplyChanges( void *unused, int notification )
 
 	// Apply VSync
 	trap_Cvar_SetValue( "r_swapInterval", s_graphicsoptions.vsync.curvalue );
+
+	// Apply Shadows
+	trap_Cvar_SetValue( "cg_shadows", s_graphicsoptions.shadows.curvalue );
+
+	// Apply Dynamic Lights
+	trap_Cvar_SetValue( "r_dynamiclight", s_graphicsoptions.dynamiclight.curvalue );
 
 	trap_Cmd_ExecuteText( EXEC_APPEND, "vid_restart\n" );
 }
@@ -1097,6 +1121,12 @@ static void GraphicsOptions_SetMenuItems( void )
 
 	// Read VSync
 	s_graphicsoptions.vsync.curvalue = trap_Cvar_VariableValue( "r_swapInterval" ) != 0;
+
+	// Read Shadows
+	s_graphicsoptions.shadows.curvalue = trap_Cvar_VariableValue( "cg_shadows" );
+
+	// Read Dynamic Lights
+	s_graphicsoptions.dynamiclight.curvalue = trap_Cvar_VariableValue( "r_dynamiclight" );
 }
 
 /*
@@ -1190,6 +1220,21 @@ void GraphicsOptions_MenuInit( void )
 		"16x",
 		NULL
 	};
+	static const char *shadow_names[] =
+	{
+		"Off",
+		"Simple (Flat)",
+		"Stencil (Sharp)",
+		"Soft Maps",
+		NULL
+	};
+	static const char *dlight_names[] =
+	{
+		"Off",
+		"On",
+		"High Quality",
+		NULL
+	};
 
 	int y;
 
@@ -1268,7 +1313,7 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.network.style				= UI_RIGHT;
 	s_graphicsoptions.network.color				= color_red;
 
-	y = 240 - 9 * (BIGCHAR_HEIGHT + 2);
+	y = 240 - 10 * (BIGCHAR_HEIGHT + 2);
 	s_graphicsoptions.list.generic.type     = MTYPE_SPINCONTROL;
 	s_graphicsoptions.list.generic.name     = "Graphics Settings:";
 	s_graphicsoptions.list.generic.flags    = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
@@ -1417,6 +1462,24 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.vsync.generic.x     = 400;
 	s_graphicsoptions.vsync.generic.y     = y;
 	s_graphicsoptions.vsync.itemnames     = enabled_names;
+	y += BIGCHAR_HEIGHT+2;
+
+	// Shadows Selection
+	s_graphicsoptions.shadows.generic.type  = MTYPE_SPINCONTROL;
+	s_graphicsoptions.shadows.generic.name  = "Shadows:";
+	s_graphicsoptions.shadows.generic.flags = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	s_graphicsoptions.shadows.generic.x     = 400;
+	s_graphicsoptions.shadows.generic.y     = y;
+	s_graphicsoptions.shadows.itemnames     = shadow_names;
+	y += BIGCHAR_HEIGHT+2;
+
+	// Dynamic Lights
+	s_graphicsoptions.dynamiclight.generic.type  = MTYPE_SPINCONTROL;
+	s_graphicsoptions.dynamiclight.generic.name  = "Dynamic Lights:";
+	s_graphicsoptions.dynamiclight.generic.flags = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	s_graphicsoptions.dynamiclight.generic.x     = 400;
+	s_graphicsoptions.dynamiclight.generic.y     = y;
+	s_graphicsoptions.dynamiclight.itemnames     = dlight_names;
 	y += 2*BIGCHAR_HEIGHT;
 
 	s_graphicsoptions.driverinfo.generic.type     = MTYPE_PTEXT;
@@ -1475,6 +1538,8 @@ void GraphicsOptions_MenuInit( void )
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.multisample );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.anisotropy );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.vsync );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.shadows );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.dynamiclight );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.driverinfo );
 
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.back );
