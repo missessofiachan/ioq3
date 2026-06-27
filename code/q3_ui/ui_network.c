@@ -41,16 +41,31 @@ NETWORK OPTIONS MENU
 #define ID_SOUND			12
 #define ID_NETWORK			13
 #define ID_RATE				14
+#define ID_MAXFPS			16
+#define ID_MAXPACKETS		17
 #define ID_BACK				15
 
 
 static const char *rate_items[] = {
-	"<= 28.8K",
-	"33.6K",
-	"56K",
-	"ISDN",
-	"LAN/Cable/xDSL",
+	"Modem (Legacy)",
+	"Cable/DSL",
+	"High-Speed Broadband",
+	"Ultra Broadband/LAN",
 	NULL
+};
+
+static const char *fps_items[] = {
+	"Uncapped", "60", "120", "144", "240", "250", "360", NULL
+};
+static int fps_values[] = {
+	0, 60, 120, 144, 240, 250, 360
+};
+
+static const char *packets_items[] = {
+	"30", "60", "100", "125", NULL
+};
+static int packets_values[] = {
+	30, 60, 100, 125
 };
 
 typedef struct {
@@ -66,6 +81,8 @@ typedef struct {
 	menutext_s		network;
 
 	menulist_s		rate;
+	menulist_s		maxfps;
+	menulist_s		maxpackets;
 
 	menubitmap_s	back;
 } networkOptionsInfo_t;
@@ -104,20 +121,25 @@ static void UI_NetworkOptionsMenu_Event( void* ptr, int event ) {
 
 	case ID_RATE:
 		if( networkOptionsInfo.rate.curvalue == 0 ) {
-			trap_Cvar_SetValue( "rate", 2500 );
-		}
-		else if( networkOptionsInfo.rate.curvalue == 1 ) {
-			trap_Cvar_SetValue( "rate", 3000 );
-		}
-		else if( networkOptionsInfo.rate.curvalue == 2 ) {
-			trap_Cvar_SetValue( "rate", 4000 );
-		}
-		else if( networkOptionsInfo.rate.curvalue == 3 ) {
 			trap_Cvar_SetValue( "rate", 5000 );
 		}
-		else if( networkOptionsInfo.rate.curvalue == 4 ) {
+		else if( networkOptionsInfo.rate.curvalue == 1 ) {
 			trap_Cvar_SetValue( "rate", 25000 );
 		}
+		else if( networkOptionsInfo.rate.curvalue == 2 ) {
+			trap_Cvar_SetValue( "rate", 50000 );
+		}
+		else if( networkOptionsInfo.rate.curvalue == 3 ) {
+			trap_Cvar_SetValue( "rate", 100000 );
+		}
+		break;
+
+	case ID_MAXFPS:
+		trap_Cvar_SetValue( "com_maxfps", fps_values[networkOptionsInfo.maxfps.curvalue] );
+		break;
+
+	case ID_MAXPACKETS:
+		trap_Cvar_SetValue( "cl_maxpackets", packets_values[networkOptionsInfo.maxpackets.curvalue] );
 		break;
 
 	case ID_BACK:
@@ -135,6 +157,9 @@ UI_NetworkOptionsMenu_Init
 static void UI_NetworkOptionsMenu_Init( void ) {
 	int		y;
 	int		rate;
+	int		fps;
+	int		packets;
+	int		i;
 
 	memset( &networkOptionsInfo, 0, sizeof(networkOptionsInfo) );
 
@@ -206,7 +231,7 @@ static void UI_NetworkOptionsMenu_Init( void ) {
 	networkOptionsInfo.network.style				= UI_RIGHT;
 	networkOptionsInfo.network.color				= color_red;
 
-	y = 240 - 1 * (BIGCHAR_HEIGHT+2);
+	y = 240 - 2 * (BIGCHAR_HEIGHT+2);
 	networkOptionsInfo.rate.generic.type		= MTYPE_SPINCONTROL;
 	networkOptionsInfo.rate.generic.name		= "Data Rate:";
 	networkOptionsInfo.rate.generic.flags		= QMF_PULSEIFFOCUS|QMF_SMALLFONT;
@@ -215,6 +240,26 @@ static void UI_NetworkOptionsMenu_Init( void ) {
 	networkOptionsInfo.rate.generic.x			= 400;
 	networkOptionsInfo.rate.generic.y			= y;
 	networkOptionsInfo.rate.itemnames			= rate_items;
+
+	y += BIGCHAR_HEIGHT+2;
+	networkOptionsInfo.maxfps.generic.type		= MTYPE_SPINCONTROL;
+	networkOptionsInfo.maxfps.generic.name		= "Max Framerate:";
+	networkOptionsInfo.maxfps.generic.flags		= QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	networkOptionsInfo.maxfps.generic.callback	= UI_NetworkOptionsMenu_Event;
+	networkOptionsInfo.maxfps.generic.id		= ID_MAXFPS;
+	networkOptionsInfo.maxfps.generic.x			= 400;
+	networkOptionsInfo.maxfps.generic.y			= y;
+	networkOptionsInfo.maxfps.itemnames			= fps_items;
+
+	y += BIGCHAR_HEIGHT+2;
+	networkOptionsInfo.maxpackets.generic.type		= MTYPE_SPINCONTROL;
+	networkOptionsInfo.maxpackets.generic.name		= "Max Packets:";
+	networkOptionsInfo.maxpackets.generic.flags		= QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	networkOptionsInfo.maxpackets.generic.callback	= UI_NetworkOptionsMenu_Event;
+	networkOptionsInfo.maxpackets.generic.id		= ID_MAXPACKETS;
+	networkOptionsInfo.maxpackets.generic.x			= 400;
+	networkOptionsInfo.maxpackets.generic.y			= y;
+	networkOptionsInfo.maxpackets.itemnames			= packets_items;
 
 	networkOptionsInfo.back.generic.type		= MTYPE_BITMAP;
 	networkOptionsInfo.back.generic.name		= ART_BACK0;
@@ -235,23 +280,40 @@ static void UI_NetworkOptionsMenu_Init( void ) {
 	Menu_AddItem( &networkOptionsInfo.menu, ( void * ) &networkOptionsInfo.sound );
 	Menu_AddItem( &networkOptionsInfo.menu, ( void * ) &networkOptionsInfo.network );
 	Menu_AddItem( &networkOptionsInfo.menu, ( void * ) &networkOptionsInfo.rate );
+	Menu_AddItem( &networkOptionsInfo.menu, ( void * ) &networkOptionsInfo.maxfps );
+	Menu_AddItem( &networkOptionsInfo.menu, ( void * ) &networkOptionsInfo.maxpackets );
 	Menu_AddItem( &networkOptionsInfo.menu, ( void * ) &networkOptionsInfo.back );
 
 	rate = trap_Cvar_VariableValue( "rate" );
-	if( rate <= 2500 ) {
+	if( rate <= 5000 ) {
 		networkOptionsInfo.rate.curvalue = 0;
 	}
-	else if( rate <= 3000 ) {
+	else if( rate <= 25000 ) {
 		networkOptionsInfo.rate.curvalue = 1;
 	}
-	else if( rate <= 4000 ) {
+	else if( rate <= 50000 ) {
 		networkOptionsInfo.rate.curvalue = 2;
 	}
-	else if( rate <= 5000 ) {
+	else {
 		networkOptionsInfo.rate.curvalue = 3;
 	}
-	else {
-		networkOptionsInfo.rate.curvalue = 4;
+
+	fps = trap_Cvar_VariableValue( "com_maxfps" );
+	networkOptionsInfo.maxfps.curvalue = 0;
+	for ( i = 0; i < 7; i++ ) {
+		if ( fps == fps_values[i] ) {
+			networkOptionsInfo.maxfps.curvalue = i;
+			break;
+		}
+	}
+
+	packets = trap_Cvar_VariableValue( "cl_maxpackets" );
+	networkOptionsInfo.maxpackets.curvalue = 3;
+	for ( i = 0; i < 4; i++ ) {
+		if ( packets == packets_values[i] ) {
+			networkOptionsInfo.maxpackets.curvalue = i;
+			break;
+		}
 	}
 }
 
