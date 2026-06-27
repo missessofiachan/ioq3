@@ -273,6 +273,10 @@ typedef struct {
 	menulist_s  	colordepth;
 	menulist_s  	geometry;
 	menulist_s  	filter;
+	menulist_s  	renderer;
+	menulist_s  	multisample;
+	menulist_s  	anisotropy;
+	menulist_s  	vsync;
 	menutext_s		driverinfo;
 
 	menubitmap_s	apply;
@@ -291,6 +295,10 @@ typedef struct
 	int filter;
 	int driver;
 	qboolean extensions;
+	int renderer;
+	int multisample;
+	int anisotropy;
+	int vsync;
 } InitialVideoOptions_s;
 
 static InitialVideoOptions_s	s_ivo;
@@ -299,22 +307,22 @@ static graphicsoptions_t		s_graphicsoptions;
 static InitialVideoOptions_s s_ivo_templates[] =
 {
 	{
-		6, qtrue, 3, 0, 2, 2, 2, 1, 0, qtrue
+		6, qtrue, 3, 0, 2, 2, 2, 1, 0, qtrue, 1, 3, 4, 1
 	},
 	{
-		4, qtrue, 2, 0, 2, 2, 1, 1, 0, qtrue	// JDC: this was tq 3
+		4, qtrue, 2, 0, 2, 2, 1, 1, 0, qtrue, 1, 2, 3, 1
 	},
 	{
-		3, qtrue, 2, 0, 0, 0, 1, 0, 0, qtrue
+		3, qtrue, 2, 0, 0, 0, 1, 0, 0, qtrue, 0, 0, 0, 0
 	},
 	{
-		2, qtrue, 1, 0, 1, 0, 0, 0, 0, qtrue
+		2, qtrue, 1, 0, 1, 0, 0, 0, 0, qtrue, 0, 0, 0, 0
 	},
 	{
-		2, qtrue, 1, 1, 1, 0, 0, 0, 0, qtrue
+		2, qtrue, 1, 1, 1, 0, 0, 0, 0, qtrue, 0, 0, 0, 0
 	},
 	{
-		3, qtrue, 1, 0, 0, 0, 1, 0, 0, qtrue
+		3, qtrue, 1, 0, 0, 0, 1, 0, 0, qtrue, 0, 0, 0, 0
 	}
 };
 
@@ -330,9 +338,15 @@ static const char *builtinResolutions[ ] =
 	"960x720",
 	"1024x768",
 	"1152x864",
+	"1280x720",
 	"1280x1024",
 	"1600x1200",
+	"1920x1080",
 	"2048x1536",
+	"2560x1440",
+	"3840x2160",
+	"5120x2880",
+	"7680x4320",
 	"856x480",
 	NULL
 };
@@ -479,6 +493,10 @@ static void GraphicsOptions_GetInitialVideo( void )
 	s_ivo.geometry    = s_graphicsoptions.geometry.curvalue;
 	s_ivo.filter      = s_graphicsoptions.filter.curvalue;
 	s_ivo.texturebits = s_graphicsoptions.texturebits.curvalue;
+	s_ivo.renderer    = s_graphicsoptions.renderer.curvalue;
+	s_ivo.multisample = s_graphicsoptions.multisample.curvalue;
+	s_ivo.anisotropy  = s_graphicsoptions.anisotropy.curvalue;
+	s_ivo.vsync       = s_graphicsoptions.vsync.curvalue;
 }
 
 /*
@@ -520,6 +538,28 @@ static void GraphicsOptions_GetResolutions( void )
 			}
 		}
 
+		// Always append built-in modern resolutions to ensure they are available
+		{
+			int j, k;
+			for ( j = 0; builtinResolutions[j]; j++ )
+			{
+				qboolean found = qfalse;
+				for ( k = 0; k < i; k++ )
+				{
+					if ( strcmp( detectedResolutions[k], builtinResolutions[j] ) == 0 )
+					{
+						found = qtrue;
+						break;
+					}
+				}
+				if ( !found && i < ARRAY_LEN(detectedResolutions)-1 )
+				{
+					detectedResolutions[i++] = builtinResolutions[j];
+					detectedResolutions[i] = NULL;
+				}
+			}
+		}
+
 		resolutions = detectedResolutions;
 		resolutionsDetected = qtrue;
 	}
@@ -551,6 +591,14 @@ static void GraphicsOptions_CheckConfig( void )
 		if ( s_ivo_templates[i].geometry != s_graphicsoptions.geometry.curvalue )
 			continue;
 		if ( s_ivo_templates[i].filter != s_graphicsoptions.filter.curvalue )
+			continue;
+		if ( s_ivo_templates[i].renderer != s_graphicsoptions.renderer.curvalue )
+			continue;
+		if ( s_ivo_templates[i].multisample != s_graphicsoptions.multisample.curvalue )
+			continue;
+		if ( s_ivo_templates[i].anisotropy != s_graphicsoptions.anisotropy.curvalue )
+			continue;
+		if ( s_ivo_templates[i].vsync != s_graphicsoptions.vsync.curvalue )
 			continue;
 //		if ( s_ivo_templates[i].texturebits != s_graphicsoptions.texturebits.curvalue )
 //			continue;
@@ -640,6 +688,22 @@ static void GraphicsOptions_UpdateMenuItems( void )
 	{
 		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
 	}
+	if ( s_ivo.renderer != s_graphicsoptions.renderer.curvalue )
+	{
+		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
+	}
+	if ( s_ivo.multisample != s_graphicsoptions.multisample.curvalue )
+	{
+		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
+	}
+	if ( s_ivo.anisotropy != s_graphicsoptions.anisotropy.curvalue )
+	{
+		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
+	}
+	if ( s_ivo.vsync != s_graphicsoptions.vsync.curvalue )
+	{
+		s_graphicsoptions.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
+	}
 
 	GraphicsOptions_CheckConfig();
 }	
@@ -678,7 +742,7 @@ static void GraphicsOptions_ApplyChanges( void *unused, int notification )
 			s_graphicsoptions.mode.curvalue = 0;
 
 		mode = GraphicsOptions_FindBuiltinResolution( s_graphicsoptions.mode.curvalue );
-		if( mode == -1 )
+		if( mode == -1 || mode > 11 )
 		{
 			char w[ 16 ], h[ 16 ];
 			Q_strncpyz( w, detectedResolutions[ s_graphicsoptions.mode.curvalue ], sizeof( w ) );
@@ -687,6 +751,7 @@ static void GraphicsOptions_ApplyChanges( void *unused, int notification )
 					strchr( detectedResolutions[ s_graphicsoptions.mode.curvalue ], 'x' ) + 1, sizeof( h ) );
 			trap_Cvar_Set( "r_customwidth", w );
 			trap_Cvar_Set( "r_customheight", h );
+			mode = -1;
 		}
 
 		trap_Cvar_SetValue( "r_mode", mode );
@@ -739,6 +804,43 @@ static void GraphicsOptions_ApplyChanges( void *unused, int notification )
 	{
 		trap_Cvar_Set( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST" );
 	}
+
+	// Apply Renderer
+	if ( s_graphicsoptions.renderer.curvalue == 1 ) {
+		trap_Cvar_Set( "cl_renderer", "opengl2" );
+	} else {
+		trap_Cvar_Set( "cl_renderer", "opengl1" );
+	}
+
+	// Apply MSAA
+	{
+		int msaa_val = 0;
+		switch ( s_graphicsoptions.multisample.curvalue ) {
+			case 1: msaa_val = 2; break;
+			case 2: msaa_val = 4; break;
+			case 3: msaa_val = 8; break;
+			case 4: msaa_val = 16; break;
+		}
+		trap_Cvar_SetValue( "r_ext_multisample", msaa_val );
+		trap_Cvar_SetValue( "r_ext_framebuffer_multisample", msaa_val );
+	}
+
+	// Apply Anisotropic Filtering
+	if ( s_graphicsoptions.anisotropy.curvalue == 0 ) {
+		trap_Cvar_SetValue( "r_ext_texture_filter_anisotropic", 0 );
+	} else {
+		int aniso_val = 2;
+		switch ( s_graphicsoptions.anisotropy.curvalue ) {
+			case 2: aniso_val = 4; break;
+			case 3: aniso_val = 8; break;
+			case 4: aniso_val = 16; break;
+		}
+		trap_Cvar_SetValue( "r_ext_texture_filter_anisotropic", 1 );
+		trap_Cvar_SetValue( "r_ext_max_anisotropy", aniso_val );
+	}
+
+	// Apply VSync
+	trap_Cvar_SetValue( "r_swapInterval", s_graphicsoptions.vsync.curvalue );
 
 	trap_Cmd_ExecuteText( EXEC_APPEND, "vid_restart\n" );
 }
@@ -957,6 +1059,44 @@ static void GraphicsOptions_SetMenuItems( void )
 	{
 		s_graphicsoptions.colordepth.curvalue = 1;
 	}
+
+	// Read Renderer
+	{
+		char renderer_buf[64];
+		trap_Cvar_VariableStringBuffer( "cl_renderer", renderer_buf, sizeof(renderer_buf) );
+		if ( Q_stricmp( renderer_buf, "opengl2" ) == 0 ) {
+			s_graphicsoptions.renderer.curvalue = 1;
+		} else {
+			s_graphicsoptions.renderer.curvalue = 0;
+		}
+	}
+
+	// Read MSAA
+	{
+		int msaa = (int)trap_Cvar_VariableValue( "r_ext_multisample" );
+		if ( msaa <= 0 ) s_graphicsoptions.multisample.curvalue = 0;
+		else if ( msaa <= 2 ) s_graphicsoptions.multisample.curvalue = 1;
+		else if ( msaa <= 4 ) s_graphicsoptions.multisample.curvalue = 2;
+		else if ( msaa <= 8 ) s_graphicsoptions.multisample.curvalue = 3;
+		else s_graphicsoptions.multisample.curvalue = 4;
+	}
+
+	// Read Anisotropic Filtering
+	{
+		int aniso_enabled = (int)trap_Cvar_VariableValue( "r_ext_texture_filter_anisotropic" );
+		if ( !aniso_enabled ) {
+			s_graphicsoptions.anisotropy.curvalue = 0;
+		} else {
+			int aniso = (int)trap_Cvar_VariableValue( "r_ext_max_anisotropy" );
+			if ( aniso <= 2 ) s_graphicsoptions.anisotropy.curvalue = 1;
+			else if ( aniso <= 4 ) s_graphicsoptions.anisotropy.curvalue = 2;
+			else if ( aniso <= 8 ) s_graphicsoptions.anisotropy.curvalue = 3;
+			else s_graphicsoptions.anisotropy.curvalue = 4;
+		}
+	}
+
+	// Read VSync
+	s_graphicsoptions.vsync.curvalue = trap_Cvar_VariableValue( "r_swapInterval" ) != 0;
 }
 
 /*
@@ -1024,6 +1164,30 @@ void GraphicsOptions_MenuInit( void )
 	{
 		"Off",
 		"On",
+		NULL
+	};
+	static const char *renderer_names[] =
+	{
+		"OpenGL1 (Classic)",
+		"OpenGL2 (Modern)",
+		NULL
+	};
+	static const char *msaa_names[] =
+	{
+		"Off",
+		"2x",
+		"4x",
+		"8x",
+		"16x",
+		NULL
+	};
+	static const char *aniso_names[] =
+	{
+		"Off",
+		"2x",
+		"4x",
+		"8x",
+		"16x",
 		NULL
 	};
 
@@ -1104,7 +1268,7 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.network.style				= UI_RIGHT;
 	s_graphicsoptions.network.color				= color_red;
 
-	y = 240 - 7 * (BIGCHAR_HEIGHT + 2);
+	y = 240 - 9 * (BIGCHAR_HEIGHT + 2);
 	s_graphicsoptions.list.generic.type     = MTYPE_SPINCONTROL;
 	s_graphicsoptions.list.generic.name     = "Graphics Settings:";
 	s_graphicsoptions.list.generic.flags    = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
@@ -1217,6 +1381,42 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.filter.generic.x	    = 400;
 	s_graphicsoptions.filter.generic.y	    = y;
 	s_graphicsoptions.filter.itemnames      = filter_names;
+	y += BIGCHAR_HEIGHT+2;
+
+	// Renderer Selection
+	s_graphicsoptions.renderer.generic.type  = MTYPE_SPINCONTROL;
+	s_graphicsoptions.renderer.generic.name  = "Renderer:";
+	s_graphicsoptions.renderer.generic.flags = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	s_graphicsoptions.renderer.generic.x     = 400;
+	s_graphicsoptions.renderer.generic.y     = y;
+	s_graphicsoptions.renderer.itemnames     = renderer_names;
+	y += BIGCHAR_HEIGHT+2;
+
+	// Anti-Aliasing (MSAA)
+	s_graphicsoptions.multisample.generic.type  = MTYPE_SPINCONTROL;
+	s_graphicsoptions.multisample.generic.name  = "Anti-Aliasing:";
+	s_graphicsoptions.multisample.generic.flags = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	s_graphicsoptions.multisample.generic.x     = 400;
+	s_graphicsoptions.multisample.generic.y     = y;
+	s_graphicsoptions.multisample.itemnames     = msaa_names;
+	y += BIGCHAR_HEIGHT+2;
+
+	// Anisotropic Filtering
+	s_graphicsoptions.anisotropy.generic.type  = MTYPE_SPINCONTROL;
+	s_graphicsoptions.anisotropy.generic.name  = "Anisotropic Filter:";
+	s_graphicsoptions.anisotropy.generic.flags = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	s_graphicsoptions.anisotropy.generic.x     = 400;
+	s_graphicsoptions.anisotropy.generic.y     = y;
+	s_graphicsoptions.anisotropy.itemnames     = aniso_names;
+	y += BIGCHAR_HEIGHT+2;
+
+	// V-Sync
+	s_graphicsoptions.vsync.generic.type  = MTYPE_SPINCONTROL;
+	s_graphicsoptions.vsync.generic.name  = "V-Sync:";
+	s_graphicsoptions.vsync.generic.flags = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	s_graphicsoptions.vsync.generic.x     = 400;
+	s_graphicsoptions.vsync.generic.y     = y;
+	s_graphicsoptions.vsync.itemnames     = enabled_names;
 	y += 2*BIGCHAR_HEIGHT;
 
 	s_graphicsoptions.driverinfo.generic.type     = MTYPE_PTEXT;
@@ -1271,6 +1471,10 @@ void GraphicsOptions_MenuInit( void )
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.tq );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.texturebits );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.filter );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.renderer );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.multisample );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.anisotropy );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.vsync );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.driverinfo );
 
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.back );

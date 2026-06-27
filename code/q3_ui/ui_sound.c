@@ -46,7 +46,7 @@ SOUND OPTIONS MENU
 #define ID_MUSICVOLUME		15
 #define ID_QUALITY			16
 #define ID_SOUNDSYSTEM		17
-//#define ID_A3D				18
+#define ID_VOIP				18
 #define ID_BACK				19
 #define ID_APPLY			20
 
@@ -61,6 +61,10 @@ static const char *quality_items[] = {
 
 static const char *soundSystem_items[] = {
 	"SDL", "OpenAL", NULL
+};
+
+static const char *enabled_names[] = {
+	"Off", "On", NULL
 };
 
 typedef struct {
@@ -79,6 +83,7 @@ typedef struct {
 	menuslider_s		musicvolume;
 	menulist_s  		soundSystem;
 	menulist_s			quality;
+	menulist_s			voip;
 //	menuradiobutton_s	a3d;
 
 	menubitmap_s		back;
@@ -88,6 +93,7 @@ typedef struct {
 	float				musicvolume_original;
 	int					soundSystem_original;
 	int					quality_original;
+	int					voip_original;
 } soundOptionsInfo_t;
 
 static soundOptionsInfo_t	soundOptionsInfo;
@@ -142,6 +148,9 @@ static void UI_SoundOptionsMenu_Event( void* ptr, int event ) {
 
 		trap_Cvar_SetValue( "s_musicvolume", soundOptionsInfo.musicvolume.curvalue / 10 );
 		soundOptionsInfo.musicvolume_original = soundOptionsInfo.musicvolume.curvalue;
+
+		trap_Cvar_SetValue( "cl_voip", soundOptionsInfo.voip.curvalue );
+		soundOptionsInfo.voip_original = soundOptionsInfo.voip.curvalue;
 
 		// Check if something changed that requires the sound system to be restarted.
 		if (soundOptionsInfo.quality_original != soundOptionsInfo.quality.curvalue
@@ -210,6 +219,10 @@ static void SoundOptions_UpdateMenuItems( void )
 		soundOptionsInfo.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
 	}
 	if ( soundOptionsInfo.quality_original != soundOptionsInfo.quality.curvalue )
+	{
+		soundOptionsInfo.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
+	}
+	if ( soundOptionsInfo.voip_original != soundOptionsInfo.voip.curvalue )
 	{
 		soundOptionsInfo.apply.generic.flags &= ~(QMF_HIDDEN|QMF_INACTIVE);
 	}
@@ -350,6 +363,16 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	soundOptionsInfo.quality.generic.y			= y;
 	soundOptionsInfo.quality.itemnames			= quality_items;
 
+	y += BIGCHAR_HEIGHT+2;
+	soundOptionsInfo.voip.generic.type			= MTYPE_SPINCONTROL;
+	soundOptionsInfo.voip.generic.name			= "Voice Chat (VoIP):";
+	soundOptionsInfo.voip.generic.flags			= QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	soundOptionsInfo.voip.generic.callback		= UI_SoundOptionsMenu_Event;
+	soundOptionsInfo.voip.generic.id			= ID_VOIP;
+	soundOptionsInfo.voip.generic.x				= 400;
+	soundOptionsInfo.voip.generic.y				= y;
+	soundOptionsInfo.voip.itemnames				= enabled_names;
+
 /*
 	y += BIGCHAR_HEIGHT+2;
 	soundOptionsInfo.a3d.generic.type			= MTYPE_RADIOBUTTON;
@@ -393,6 +416,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.musicvolume );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.soundSystem );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.quality );
+	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.voip );
 //	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.a3d );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.back );
 	Menu_AddItem( &soundOptionsInfo.menu, ( void * ) &soundOptionsInfo.apply );
@@ -419,6 +443,7 @@ static void UI_SoundOptionsMenu_Init( void ) {
 		soundOptionsInfo.quality_original = 2;
 	soundOptionsInfo.quality.curvalue = soundOptionsInfo.quality_original;
 
+	soundOptionsInfo.voip.curvalue = soundOptionsInfo.voip_original = trap_Cvar_VariableValue( "cl_voip" ) != 0;
 //	soundOptionsInfo.a3d.curvalue = (int)trap_Cvar_VariableValue( "s_usingA3D" );
 }
 

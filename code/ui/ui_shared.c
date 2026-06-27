@@ -2057,7 +2057,7 @@ qboolean Item_Multi_HandleKey(itemDef_t *item, int key) {
 				}
 
 				if (multiPtr->videoMode) {
-					if (multiPtr->cvarValue[current] != -1) {
+					if (multiPtr->cvarValue[current] != -1 && multiPtr->cvarValue[current] <= 11) {
 						DC->setCVar("r_mode", va("%i", (int) multiPtr->cvarValue[current] ));
 					} else {
 						int w, h;
@@ -5263,9 +5263,15 @@ static const char *builtinResolutions[ ] =
 	"960x720",
 	"1024x768",
 	"1152x864",
+	"1280x720",
 	"1280x1024",
 	"1600x1200",
+	"1920x1080",
 	"2048x1536",
+	"2560x1440",
+	"3840x2160",
+	"5120x2880",
+	"7680x4320",
 	"856x480",
 	NULL
 };
@@ -5419,6 +5425,29 @@ static void Item_ApplyHacks( itemDef_t *item ) {
 				multiPtr->cvarStr[multiPtr->count] = String_Alloc( currentResolution );
 				multiPtr->cvarValue[multiPtr->count] = -1;
 				multiPtr->count++;
+			}
+		}
+
+		// Always append built-in modern resolutions to ensure they are available
+		{
+			int j, k;
+			for ( j = 0; builtinResolutions[j] && multiPtr->count < MAX_MULTI_CVARS; j++ ) {
+				qboolean found = qfalse;
+				for ( k = 0; k < multiPtr->count; k++ ) {
+					if ( !Q_stricmp( multiPtr->cvarStr[k], builtinResolutions[j] ) ) {
+						found = qtrue;
+						break;
+					}
+				}
+				if ( !found ) {
+					UI_ResolutionToAspect( builtinResolutions[j], aspect, sizeof( aspect ) );
+					Com_sprintf( modeName, sizeof( modeName ), "%s (%s)", builtinResolutions[j], aspect );
+
+					multiPtr->cvarList[multiPtr->count] = String_Alloc( modeName );
+					multiPtr->cvarStr[multiPtr->count] = builtinResolutions[j];
+					multiPtr->cvarValue[multiPtr->count] = j;
+					multiPtr->count++;
+				}
 			}
 		}
 

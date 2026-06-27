@@ -553,7 +553,7 @@ static void Slider_Init( menuslider_s *s )
 		len = 0;
 
 	s->generic.left   = s->generic.x - (len+1)*SMALLCHAR_WIDTH; 
-	s->generic.right  = s->generic.x + (SLIDER_RANGE+2+1)*SMALLCHAR_WIDTH;
+	s->generic.right  = s->generic.x + (SLIDER_RANGE+2+6)*SMALLCHAR_WIDTH;
 	s->generic.top    = s->generic.y;
 	s->generic.bottom = s->generic.y + SMALLCHAR_HEIGHT;
 }
@@ -682,6 +682,17 @@ static void Slider_Draw( menuslider_s *s ) {
 	}
 
 	UI_DrawHandlePic( (int)( x + 2*SMALLCHAR_WIDTH + (SLIDER_RANGE-1)*SMALLCHAR_WIDTH* s->range ) - 2, y - 2, 12, 20, button );
+
+	// draw numerical value next to slider
+	{
+		char valuestr[32];
+		if ( (int)s->curvalue == s->curvalue ) {
+			Com_sprintf( valuestr, sizeof(valuestr), "%d", (int)s->curvalue );
+		} else {
+			Com_sprintf( valuestr, sizeof(valuestr), "%.2f", s->curvalue );
+		}
+		UI_DrawString( x + (SLIDER_RANGE + 4) * SMALLCHAR_WIDTH, y, valuestr, UI_LEFT|style, color );
+	}
 }
 #else
 /*

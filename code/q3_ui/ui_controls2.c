@@ -122,6 +122,8 @@ typedef struct
 #define ID_JOYENABLE	40
 #define ID_JOYTHRESHOLD	41
 #define ID_SMOOTHMOUSE	42
+#define ID_MOUSEACCEL	43
+#define ID_FOV			44
 
 #define ANIM_IDLE		0
 #define ANIM_RUN		1
@@ -195,6 +197,8 @@ typedef struct
 	menuaction_s		gesture;
 	menuradiobutton_s	invertmouse;
 	menuslider_s		sensitivity;
+	menuslider_s		mouseaccel;
+	menuslider_s		fov;
 	menuradiobutton_s	smoothmouse;
 	menuradiobutton_s	alwaysrun;
 	menuaction_s		showscores;
@@ -277,6 +281,8 @@ static configcvar_t g_configcvars[] =
 	{"joy_threshold",	0,					0},
 	{"m_filter",		0,					0},
 	{"cl_freelook",		0,					0},
+	{"cl_mouseAccel",	0,					0},
+	{"cg_fov",			0,					0},
 	{NULL,				0,					0}
 };
 
@@ -315,6 +321,8 @@ static menucommon_s *g_weapons_controls[] = {
 
 static menucommon_s *g_looking_controls[] = {
 	(menucommon_s *)&s_controls.sensitivity,
+	(menucommon_s *)&s_controls.mouseaccel,
+	(menucommon_s *)&s_controls.fov,
 	(menucommon_s *)&s_controls.smoothmouse,
 	(menucommon_s *)&s_controls.invertmouse,
 	(menucommon_s *)&s_controls.lookup,
@@ -808,6 +816,8 @@ static void Controls_GetConfig( void )
 	s_controls.alwaysrun.curvalue    = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "cl_run" ) );
 	s_controls.autoswitch.curvalue   = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "cg_autoswitch" ) );
 	s_controls.sensitivity.curvalue  = UI_ClampCvar( 2, 30, Controls_GetCvarValue( "sensitivity" ) );
+	s_controls.mouseaccel.curvalue   = UI_ClampCvar( 0, 5, Controls_GetCvarValue( "cl_mouseAccel" ) );
+	s_controls.fov.curvalue          = UI_ClampCvar( 80, 130, Controls_GetCvarValue( "cg_fov" ) );
 	s_controls.joyenable.curvalue    = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "in_joystick" ) );
 	s_controls.joythreshold.curvalue = UI_ClampCvar( 0.05f, 0.75f, Controls_GetCvarValue( "joy_threshold" ) );
 	s_controls.freelook.curvalue     = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "cl_freelook" ) );
@@ -849,6 +859,8 @@ static void Controls_SetConfig( void )
 	trap_Cvar_SetValue( "cl_run", s_controls.alwaysrun.curvalue );
 	trap_Cvar_SetValue( "cg_autoswitch", s_controls.autoswitch.curvalue );
 	trap_Cvar_SetValue( "sensitivity", s_controls.sensitivity.curvalue );
+	trap_Cvar_SetValue( "cl_mouseAccel", s_controls.mouseaccel.curvalue );
+	trap_Cvar_SetValue( "cg_fov", s_controls.fov.curvalue );
 	trap_Cvar_SetValue( "in_joystick", s_controls.joyenable.curvalue );
 	trap_Cvar_SetValue( "joy_threshold", s_controls.joythreshold.curvalue );
 	trap_Cvar_SetValue( "cl_freelook", s_controls.freelook.curvalue );
@@ -882,6 +894,8 @@ static void Controls_SetDefaults( void )
 	s_controls.alwaysrun.curvalue    = Controls_GetCvarDefault( "cl_run" );
 	s_controls.autoswitch.curvalue   = Controls_GetCvarDefault( "cg_autoswitch" );
 	s_controls.sensitivity.curvalue  = Controls_GetCvarDefault( "sensitivity" );
+	s_controls.mouseaccel.curvalue   = Controls_GetCvarDefault( "cl_mouseAccel" );
+	s_controls.fov.curvalue          = Controls_GetCvarDefault( "cg_fov" );
 	s_controls.joyenable.curvalue    = Controls_GetCvarDefault( "in_joystick" );
 	s_controls.joythreshold.curvalue = Controls_GetCvarDefault( "joy_threshold" );
 	s_controls.freelook.curvalue     = Controls_GetCvarDefault( "cl_freelook" );
@@ -1114,6 +1128,8 @@ static void Controls_MenuEvent( void* ptr, int event )
 		case ID_AUTOSWITCH:
 		case ID_JOYENABLE:
 		case ID_JOYTHRESHOLD:
+		case ID_MOUSEACCEL:
+		case ID_FOV:
 			if (event == QM_ACTIVATED)
 			{
 				s_controls.changesmade = qtrue;
@@ -1499,6 +1515,26 @@ static void Controls_MenuInit( void )
 	s_controls.sensitivity.maxvalue		     = 30;
 	s_controls.sensitivity.generic.statusbar = Controls_StatusBar;
 
+	s_controls.mouseaccel.generic.type	     = MTYPE_SLIDER;
+	s_controls.mouseaccel.generic.x		     = SCREEN_WIDTH/2;
+	s_controls.mouseaccel.generic.flags	     = QMF_SMALLFONT;
+	s_controls.mouseaccel.generic.name	     = "mouse acceleration";
+	s_controls.mouseaccel.generic.id 	     = ID_MOUSEACCEL;
+	s_controls.mouseaccel.generic.callback  = Controls_MenuEvent;
+	s_controls.mouseaccel.minvalue		     = 0;
+	s_controls.mouseaccel.maxvalue		     = 5;
+	s_controls.mouseaccel.generic.statusbar = Controls_StatusBar;
+
+	s_controls.fov.generic.type	     = MTYPE_SLIDER;
+	s_controls.fov.generic.x		 = SCREEN_WIDTH/2;
+	s_controls.fov.generic.flags	 = QMF_SMALLFONT;
+	s_controls.fov.generic.name	     = "field of view";
+	s_controls.fov.generic.id 	     = ID_FOV;
+	s_controls.fov.generic.callback  = Controls_MenuEvent;
+	s_controls.fov.minvalue		     = 80;
+	s_controls.fov.maxvalue		     = 130;
+	s_controls.fov.generic.statusbar = Controls_StatusBar;
+
 	s_controls.gesture.generic.type	     = MTYPE_ACTION;
 	s_controls.gesture.generic.flags     = QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS|QMF_GRAYED|QMF_HIDDEN;
 	s_controls.gesture.generic.callback  = Controls_ActionEvent;
@@ -1573,6 +1609,8 @@ static void Controls_MenuInit( void )
 	Menu_AddItem( &s_controls.menu, &s_controls.misc );
 
 	Menu_AddItem( &s_controls.menu, &s_controls.sensitivity );
+	Menu_AddItem( &s_controls.menu, &s_controls.mouseaccel );
+	Menu_AddItem( &s_controls.menu, &s_controls.fov );
 	Menu_AddItem( &s_controls.menu, &s_controls.smoothmouse );
 	Menu_AddItem( &s_controls.menu, &s_controls.invertmouse );
 	Menu_AddItem( &s_controls.menu, &s_controls.lookup );
