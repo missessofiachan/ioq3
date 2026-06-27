@@ -1127,6 +1127,7 @@ extern	vmCvar_t		cg_gun_x;
 extern	vmCvar_t		cg_gun_y;
 extern	vmCvar_t		cg_gun_z;
 extern	vmCvar_t		cg_drawGun;
+extern	vmCvar_t		cg_gunWidescreen;
 extern	vmCvar_t		cg_viewsize;
 extern	vmCvar_t		cg_tracerChance;
 extern	vmCvar_t		cg_tracerWidth;

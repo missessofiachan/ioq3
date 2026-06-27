@@ -1265,6 +1265,19 @@ void CG_AddPlayerWeapon( refEntity_t *parent, playerState_t *ps, centity_t *cent
 	MatrixMultiply(lerped.axis, ((refEntity_t *)parent)->axis, gun.axis);
 	gun.backlerp = parent->backlerp;
 
+	if ( ps && cg_gunWidescreen.integer ) {
+		float fov_factor = ( cg.refdef.fov_x - 90.0f ) / 90.0f;
+		if ( fov_factor > 0 ) {
+			VectorMA( gun.origin, fov_factor * 6.0f, parent->axis[0], gun.origin );
+			VectorMA( gun.origin, -fov_factor * 2.0f, parent->axis[2], gun.origin );
+			if ( cg_drawGun.integer == 2 ) {
+				VectorMA( gun.origin, -fov_factor * 1.0f, parent->axis[1], gun.origin );
+			} else if ( cg_drawGun.integer != 3 ) {
+				VectorMA( gun.origin, fov_factor * 1.0f, parent->axis[1], gun.origin );
+			}
+		}
+	}
+
 	CG_AddWeaponWithPowerups( &gun, cent->currentState.powerups );
 
 	// add the spinning barrel

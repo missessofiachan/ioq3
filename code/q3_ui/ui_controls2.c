@@ -124,6 +124,7 @@ typedef struct
 #define ID_SMOOTHMOUSE	42
 #define ID_MOUSEACCEL	43
 #define ID_FOV			44
+#define ID_GUNWIDESCREEN	45
 
 #define ANIM_IDLE		0
 #define ANIM_RUN		1
@@ -199,6 +200,7 @@ typedef struct
 	menuslider_s		sensitivity;
 	menuslider_s		mouseaccel;
 	menuslider_s		fov;
+	menuradiobutton_s	gunwidescreen;
 	menuradiobutton_s	smoothmouse;
 	menuradiobutton_s	alwaysrun;
 	menuaction_s		showscores;
@@ -283,6 +285,7 @@ static configcvar_t g_configcvars[] =
 	{"cl_freelook",		0,					0},
 	{"cl_mouseAccel",	0,					0},
 	{"cg_fov",			0,					0},
+	{"cg_gunWidescreen",	0,				0},
 	{NULL,				0,					0}
 };
 
@@ -323,6 +326,7 @@ static menucommon_s *g_looking_controls[] = {
 	(menucommon_s *)&s_controls.sensitivity,
 	(menucommon_s *)&s_controls.mouseaccel,
 	(menucommon_s *)&s_controls.fov,
+	(menucommon_s *)&s_controls.gunwidescreen,
 	(menucommon_s *)&s_controls.smoothmouse,
 	(menucommon_s *)&s_controls.invertmouse,
 	(menucommon_s *)&s_controls.lookup,
@@ -818,6 +822,7 @@ static void Controls_GetConfig( void )
 	s_controls.sensitivity.curvalue  = UI_ClampCvar( 2, 30, Controls_GetCvarValue( "sensitivity" ) );
 	s_controls.mouseaccel.curvalue   = UI_ClampCvar( 0, 5, Controls_GetCvarValue( "cl_mouseAccel" ) );
 	s_controls.fov.curvalue          = UI_ClampCvar( 80, 130, Controls_GetCvarValue( "cg_fov" ) );
+	s_controls.gunwidescreen.curvalue = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "cg_gunWidescreen" ) );
 	s_controls.joyenable.curvalue    = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "in_joystick" ) );
 	s_controls.joythreshold.curvalue = UI_ClampCvar( 0.05f, 0.75f, Controls_GetCvarValue( "joy_threshold" ) );
 	s_controls.freelook.curvalue     = UI_ClampCvar( 0, 1, Controls_GetCvarValue( "cl_freelook" ) );
@@ -861,6 +866,7 @@ static void Controls_SetConfig( void )
 	trap_Cvar_SetValue( "sensitivity", s_controls.sensitivity.curvalue );
 	trap_Cvar_SetValue( "cl_mouseAccel", s_controls.mouseaccel.curvalue );
 	trap_Cvar_SetValue( "cg_fov", s_controls.fov.curvalue );
+	trap_Cvar_SetValue( "cg_gunWidescreen", s_controls.gunwidescreen.curvalue );
 	trap_Cvar_SetValue( "in_joystick", s_controls.joyenable.curvalue );
 	trap_Cvar_SetValue( "joy_threshold", s_controls.joythreshold.curvalue );
 	trap_Cvar_SetValue( "cl_freelook", s_controls.freelook.curvalue );
@@ -896,6 +902,7 @@ static void Controls_SetDefaults( void )
 	s_controls.sensitivity.curvalue  = Controls_GetCvarDefault( "sensitivity" );
 	s_controls.mouseaccel.curvalue   = Controls_GetCvarDefault( "cl_mouseAccel" );
 	s_controls.fov.curvalue          = Controls_GetCvarDefault( "cg_fov" );
+	s_controls.gunwidescreen.curvalue = Controls_GetCvarDefault( "cg_gunWidescreen" );
 	s_controls.joyenable.curvalue    = Controls_GetCvarDefault( "in_joystick" );
 	s_controls.joythreshold.curvalue = Controls_GetCvarDefault( "joy_threshold" );
 	s_controls.freelook.curvalue     = Controls_GetCvarDefault( "cl_freelook" );
@@ -1130,6 +1137,7 @@ static void Controls_MenuEvent( void* ptr, int event )
 		case ID_JOYTHRESHOLD:
 		case ID_MOUSEACCEL:
 		case ID_FOV:
+		case ID_GUNWIDESCREEN:
 			if (event == QM_ACTIVATED)
 			{
 				s_controls.changesmade = qtrue;
@@ -1535,6 +1543,14 @@ static void Controls_MenuInit( void )
 	s_controls.fov.maxvalue		     = 130;
 	s_controls.fov.generic.statusbar = Controls_StatusBar;
 
+	s_controls.gunwidescreen.generic.type	     = MTYPE_RADIOBUTTON;
+	s_controls.gunwidescreen.generic.x		     = SCREEN_WIDTH/2;
+	s_controls.gunwidescreen.generic.flags	     = QMF_SMALLFONT;
+	s_controls.gunwidescreen.generic.name	     = "widescreen viewmodel";
+	s_controls.gunwidescreen.generic.id 	     = ID_GUNWIDESCREEN;
+	s_controls.gunwidescreen.generic.callback    = Controls_MenuEvent;
+	s_controls.gunwidescreen.generic.statusbar   = Controls_StatusBar;
+
 	s_controls.gesture.generic.type	     = MTYPE_ACTION;
 	s_controls.gesture.generic.flags     = QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS|QMF_GRAYED|QMF_HIDDEN;
 	s_controls.gesture.generic.callback  = Controls_ActionEvent;
@@ -1611,6 +1627,7 @@ static void Controls_MenuInit( void )
 	Menu_AddItem( &s_controls.menu, &s_controls.sensitivity );
 	Menu_AddItem( &s_controls.menu, &s_controls.mouseaccel );
 	Menu_AddItem( &s_controls.menu, &s_controls.fov );
+	Menu_AddItem( &s_controls.menu, &s_controls.gunwidescreen );
 	Menu_AddItem( &s_controls.menu, &s_controls.smoothmouse );
 	Menu_AddItem( &s_controls.menu, &s_controls.invertmouse );
 	Menu_AddItem( &s_controls.menu, &s_controls.lookup );
